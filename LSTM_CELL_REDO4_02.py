@@ -18,12 +18,12 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 1
 epochs = 10
 mat_file_path = 'IQ_400sig_10_02.mat'
-num_epochs = 20
+num_epochs = 10
 buffer_len = 1000
-sig_len = 80000
+sig_len = 10000
 backprop_const = 2
-n_train_examples = 100
-n_valid_examples = 40
+n_train_examples = 30
+n_valid_examples = 10
 num_dir=2
 
 best_val_ratio=2
@@ -33,11 +33,11 @@ def objective(trial):
     # Define the lists of possible values for the hyperparameters
     sig_2fc_values = range(40,200,2)  # List of possible values for sig_2fc
     backprop_const_val = range(1,100)
-    lr_vals = np.logspace(-7,-3,100)
+    lr_vals = np.logspace(-5.5,-3,100)
     input_size_vals = range(2,40,2)
     proj_size_values = range(40,200,10)  # List of possible values for proj_size
     cell_size_values = range(1000,3000,100) # List of possible values for cell_size
-    batch_size_vals = [20]
+    batch_size_vals = [10]
     sced_fact_vals = [0.2,0.3,0.35,0.4,0.5,0.7]
     #lr_vals =  [0.007]
     # backprop_val = range(10)
@@ -240,14 +240,14 @@ def objective(trial):
 # Create and optimize using Optuna
 
 
-timeout= 60*60*10
+timeout= 60*60*6
 study = optuna.create_study(direction='minimize')  # You can change the direction depending on the objective
 study.enqueue_trial({"proj_size":50,"cell_size":1900 ,  "input_size":6,"sig2fc":84,
-                      "rnn_type":'LSTM' , "backprop":35 , "batch_sz":20, "bi":1 ,
+                      "rnn_type":'LSTM' , "backprop":35 , "batch_sz":10, "bi":1 ,
                       "sced_factor":0.5})
-study.optimize(objective, n_trials=1000 ,timeout=timeout)  # Number of trials to perform
+study.optimize(objective, n_trials=100 ,timeout=timeout)  # Number of trials to perform
 
-with open ("NO_PROJ_RNN_siglen10K_5epoch.pkl",'wb') as f:
+with open ("PROJ_RNN_siglen10K_5epoch.pkl",'wb') as f:
     pickle.dump(study,f)
 
 

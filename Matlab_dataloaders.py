@@ -11,14 +11,14 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
 class MATLABDataset_inter(Dataset):
-    def __init__(self, mat_file, signal_len,split_ratio=0.8):
+    def __init__(self, mat_file, signal_len,split_ratio=0.8,fco_distor=False):
         """
         Args:
             mat_file (str): Path to the .mat file.
             signal_len (int): Desired constant length for all signals.
         """
         mat_data = scipy.io.loadmat(mat_file)
-
+        self.fco_distor = fco_distor
         self.clean_signals = [sig.flatten() for sig in mat_data['IQ_dataset_param']['clean_sig'][0][0][0]]
         self.distor_signals = [sig.flatten() for sig in mat_data['IQ_dataset_param']['distor_sig'][0][0][0]]
 
@@ -26,6 +26,10 @@ class MATLABDataset_inter(Dataset):
         split_idx = int(len(self.clean_signals) * split_ratio)
         self.train_clean_signals = self.clean_signals[:split_idx]
         self.train_distor_signals = self.distor_signals[:split_idx]
+        if self.fco_distor:
+            self.fco_tar = [sig.flatten() for sig in mat_data['IQ_dataset_param']['fco'][0][0][0]]
+            self.train_fco = self.fco_tar[:split_idx]
+            self.val_fco = self.fco_tar[split_idx:]
 
         self.val_clean_signals = self.clean_signals[split_idx:]
         self.val_distor_signals = self.distor_signals[split_idx:]
@@ -83,7 +87,9 @@ class MATLABDataset_inter(Dataset):
 
         clean_sig = self._interleave(clean_real,clean_imag)
         distor_sig = self._interleave(distor_real, distor_imag)
-
+        if self.fco_distor:
+            fco_tar_inKhz = torch.tensor(self.fco_tar[idx],dtype=torch.float32) / 10e3
+            return clean_sig,distor_sig,fco_tar_inKhz
         # Pack in a way that matches what the network expects
         return clean_sig,distor_sig
 
