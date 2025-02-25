@@ -18,12 +18,12 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 1
 epochs = 10
 mat_file_path = 'IQ_400sig_10_02.mat'
-num_epochs = 10
+num_epochs = 30
 buffer_len = 1000
-sig_len = 10000
-backprop_const = 2
-n_train_examples = 30
-n_valid_examples = 10
+sig_len = 80000
+backprop_const = 1
+n_train_examples = 320
+n_valid_examples = 80
 num_dir=2
 
 best_val_ratio=2
@@ -31,43 +31,48 @@ best_val_ratio=2
 # Define the objective function for Optuna optimization
 def objective(trial):
     # Define the lists of possible values for the hyperparameters
-    sig_2fc_values = range(40,200,2)  # List of possible values for sig_2fc
-    backprop_const_val = range(1,100)
-    lr_vals = np.logspace(-5.5,-3,100)
-    input_size_vals = range(2,40,2)
-    proj_size_values = range(40,200,10)  # List of possible values for proj_size
-    cell_size_values = range(1000,3000,100) # List of possible values for cell_size
-    batch_size_vals = [10]
-    sced_fact_vals = [0.2,0.3,0.35,0.4,0.5,0.7]
+    #sig_2fc_values = range(40,200,2)  # List of possible values for sig_2fc
+    in_2sigfc_ratio_vals = [17]
+    backprop_sced_val = range(1,5)
+    lr_vals = np.logspace(-7,-3.5,100)
+    input_size_vals =[30] #nrange(24,48,2)
+    proj_size_values = [60]  #range(40,80,10)  # List of possible values for proj_size
+    cell_size_values = [2200] # range(1800,3000,100) # List of possible values for cell_size
+    batch_size_vals = [2,5,8,10,20,40]
+    sced_fact_vals = np.linspace(0.1,0.9,10)
+    Wd_vals = np.logspace(-7,-4.5,20)
     #lr_vals =  [0.007]
     # backprop_val = range(10)
     RNN_type_vals = ['LSTM']#, 'RNN', 'GRU']
 
     proj_size = trial.suggest_categorical("proj_size", proj_size_values)
     cell_size = trial.suggest_categorical("cell_size", cell_size_values)
-    input_size = trial.suggest_categorical("input_size", input_size_vals)
-    sig2fc = trial.suggest_categorical("sig2fc", sig_2fc_values)
+    in_2sigfc_ratio = trial.suggest_categorical("input2FC_ratio", in_2sigfc_ratio_vals)
+    input_size = trial.suggest_categorical("input_sz",  input_size_vals)
+    W_decay = trial.suggest_categorical("w_decay",  Wd_vals)
     RNN_type = trial.suggest_categorical("rnn_type", RNN_type_vals)
     learning_rate=trial.suggest_categorical("lr", lr_vals)
-    num_dir=trial.suggest_categorical("bi", [1,2])
-    backprop_const=trial.suggest_categorical("backprop",backprop_const_val)
+    num_dir=trial.suggest_categorical("bi", [1])
+    backprop_sced_const=trial.suggest_categorical("backprop_sced",backprop_sced_val)
     batch_size=trial.suggest_categorical("batch_sz",batch_size_vals)
     sced_fact = trial.suggest_categorical("sced_factor",sced_fact_vals)
+    sig2fc = input_size * in_2sigfc_ratio
     model = SequentialRNNNet(input_size=input_size,proj_size=proj_size,sig_to_fc=sig2fc,
                              RNNtype=RNN_type,cell_size=cell_size,batch_size=batch_size,bi=num_dir).to(device)
+    best_val_ratio=2
 
 # def train_network(mat_file_path, buffer_len,sig_len ,num_epochs, learning_rate=0.01, batch_size=1,\
 #                    validation_split=0.2,device='cuda' if torch.cuda.is_available() else 'cpu',
 #                   input_size=10,cell_size=1000,num_dir=2,sig_2fc=100,backprop_const=5,proj_size=100,
 #                   model_path = '8_02_IQnopass_h_and_c.pth',RNN_type='LSTM',optuna_trail=None):
-
+    backprop_const = 1
     dataset = MATLABDataset_inter(mat_file_path,signal_len=sig_len)
     dataset.set_train()
     train_dataset= dataset.get_train_set()
     dataset.set_validation()
     val_dataset=dataset.get_validation_set()
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
         # for optuna
 
     #dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -76,8 +81,8 @@ def objective(trial):
     # Print the size of the model (total number of parameters)
     # Calculate the total number of parameters (in bytes)
     total_params = model.count_params()
-    for name, param in model.named_parameters():
-         print(f"{name}: {param.numel()} parameters")
+    # for name, param in model.named_parameters():
+    #      print(f"{name}: {param.numel()} parameters")
     # Assuming 4 bytes per parameter (float32)
     model_size_bytes = total_params * 4
     model_size_mb = model_size_bytes / (1024 ** 2)
@@ -85,11 +90,10 @@ def objective(trial):
 
     if model_size_mb > 30 or proj_size>cell_size:
         raise  optuna.exceptions.TrialPruned()
-    if sig2fc%input_size != 0:
-        raise optuna.exceptions.TrialPruned()
+
 
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate,weight_decay=W_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=sced_fact, patience=0,cooldown=1)
     step_interval = 2*sig2fc  # Initial interval size
     interval_growth =0  # Growth factor for interval size
@@ -101,6 +105,8 @@ def objective(trial):
         if new_lr != lr:
             lr=new_lr
             print("lr is now" + str(lr))
+            backprop_const += backprop_sced_const
+
         model.train()
         epoch_loss = 0.0
         epoch_diff=0.0
@@ -151,12 +157,12 @@ def objective(trial):
                     optimizer.zero_grad()
                     sig_loss,backprop_iter = 0,0
 
-            sig_iter+=1
+            #sig_iter+=1
             epoch_diff += diff
             epoch_loss += sig_loss
-            if sig_iter >= (n_train_examples/batch_size):
-                sig_iter=0
-                break
+            # if sig_iter >= (n_train_examples/batch_size):
+            #     sig_iter=0
+            #     break
 
         #avg_diff = epoch_diff / len(train_loader)
         #avg_epoch_loss = epoch_loss /len(train_loader)
@@ -200,21 +206,27 @@ def objective(trial):
                     sig_loss = sig_loss + loss
                 diff_val += diff
                 val_loss += sig_loss
-                sig_iter += 1
-                if  sig_iter >= ( n_valid_examples/batch_size):
-                    sig_iter = 0
-                    break
+                #sig_iter += 1
+                # if  sig_iter >= ( n_valid_examples/batch_size):
+                #     sig_iter = 0
+                #     break
             #avg_val_loss = val_loss / len(val_loader)
             val_ratio = float(val_loss/diff_val)
             #print(f"Epoch [{epoch + 1}/{num_epochs}], Avg Validation Loss: {avg_val_loss:}")
             print("val ratio" + str(val_ratio))
             val_metric = float(val_ratio) #+ float(model_size_mb/10)
 
+            # Check if the current validation metric is better (lower)
             # if val_metric < best_val_ratio:
-            #     save_torch_model(model=model, path='noproj_first_scan_best.pth')
+            #     # Save the model if this is the best validation metric so far
             #     best_val_ratio = val_metric
+            #     model_save_path = f"best_model_trial_{trial.number}.pth"
+            #     torch.save(model.state_dict(), model_save_path)
+            #     print(f"Saved best model for trial {trial.number}, epoch {epoch + 1}")
 
 
+        if backprop_const > int(sig_len/step_interval):
+            backprop_const=int(sig_len/step_interval)
         trial.report(val_metric ,epoch)
         if trial.should_prune():
             raise optuna.exceptions.TrialPruned()
@@ -224,30 +236,35 @@ def objective(trial):
             #     print("backward prog is cal every" + str(backprop_const) + 'steps' )
 
         # Increase the step interval for the next epoch
-
+    model_save_path = f"final_model_trial_{trial.number}.pth"
+    torch.save(model.state_dict(), model_save_path)
+    print(f"Saved last model for trial {trial.number}")
     return val_metric
 
 
 
 
-# Example usage within the training function:
-# After training is complete, save two signals and their outputs
-# Replace 'mat_file_path' and 'signal_len' with appropriate values
-#  print("Training complete.")
- #   torch.save(model.state_dict(), 'trained_lstm_net.pth')
-#    print("Model saved as 'trained_lstm_net.pth'.")
-# Example usage
-# Create and optimize using Optuna
+#
+# # Create and optimize using Optuna
+# with open ("PROJ_RNN_siglen10K_finetune_18_02",'rb') as f:
+#     study=pickle.load(f)
+# # Convergence plot
+#
+# fig = optuna.visualization.plot_param_importances(study)
+# fig.show()
+#
+# convergence_fig = optuna.visualization.plot_contour(study, params=["proj_size", "input_sz"])
+# convergence_fig.show()
+#
 
 
-timeout= 60*60*6
+
+timeout= 60*60*24
 study = optuna.create_study(direction='minimize')  # You can change the direction depending on the objective
-study.enqueue_trial({"proj_size":50,"cell_size":1900 ,  "input_size":6,"sig2fc":84,
-                      "rnn_type":'LSTM' , "backprop":35 , "batch_sz":10, "bi":1 ,
-                      "sced_factor":0.5})
-study.optimize(objective, n_trials=100 ,timeout=timeout)  # Number of trials to perform
+#study.enqueue_trial({"backprop_sced":1,"batch_sz":20 ,"sced_factor":0.5 })
+study.optimize(objective, n_trials=1000 ,timeout=timeout)  # Number of trials to perform
 
-with open ("PROJ_RNN_siglen10K_5epoch.pkl",'wb') as f:
+with open ("FULL_run_20_02",'wb') as f:
     pickle.dump(study,f)
 
 
@@ -268,9 +285,6 @@ for key, value in trial.params.items():
 fig = optuna.visualization.plot_param_importances(study)
 fig.show()
 
-
-
-#
 # train_network(mat_file_path='IQ_400sig_10_02.mat', num_epochs=50, batch_size=1 ,\
 #               learning_rate=0.0005,buffer_len=1000,sig_len=10000,proj_size=50,cell_size=2000
 #               ,backprop_const=3,input_size=10)

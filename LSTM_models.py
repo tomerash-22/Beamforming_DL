@@ -27,6 +27,7 @@ class SequentialRNNNet(nn.Module):
         self.sig_2fc = sig_to_fc  #must be divisable by output size , th sig len before passing to FC layer
         self.cell_size = cell_size
         self.input_size=input_size
+
         self.seqL = int (2*self.sig_2fc/self.input_size)
         self.Ext_it = int(output_size/self.sig_2fc)
 
