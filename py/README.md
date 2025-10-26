@@ -1,3 +1,97 @@
+### **CNN_model_database**
+---
+
+### **`symmetric_matrix_from_params`**
+
+* **Input:**
+
+  * `params`: Tensor of shape `[batch, 7]` or `[7]` containing parameters `[a, b, c, d, e, f, g]`.
+* **Output:**
+
+  * `mat`: Complex symmetric 4×4 matrix (or batch of matrices) with 1s or `g` on the diagonal.
+
+---
+
+### **`MATLABDataset`**
+
+* **Input:**
+
+  * `mat_file_path`: Path to `.mat` dataset file containing `dataset_param_coupling` structure.
+* **Output:**
+
+  * PyTorch `Dataset` returning `(input_sample, target_sample)` each of shape `(2, 4, 4)` normalized by Frobenius norm.
+
+---
+
+### **`ResidualBlockWithoutBN`**
+
+* **Input:**
+
+  * `x`: Tensor input of shape `(batch, channels, H, W)`.
+* **Output:**
+
+  * Residual output tensor of same shape after Conv2D + ReLU + skip connection.
+
+---
+
+### **`ConvBlock`**
+
+* **Input:**
+
+  * `x`: Tensor `(batch, in_channels, H, W)`.
+* **Output:**
+
+  * Tensor after Conv2D + ReLU activation.
+
+---
+
+### **`ConvBlock_Wbn`**
+
+* **Input:**
+
+  * `x`: Tensor `(batch, in_channels, H, W)`.
+* **Output:**
+
+  * Tensor after Conv2D + BatchNorm + ReLU.
+
+---
+
+### **`ResidualBlock`**
+
+* **Input:**
+
+  * `x`: Tensor `(batch, in_channels, H, W)`.
+* **Output:**
+
+  * Residual tensor after Conv2D + BatchNorm + ReLU + skip connection.
+
+---
+
+### **`MyRealCNN`**
+
+* **Input:**
+
+  * `x`: Tensor `(batch, 2, 4, 4)` representing real/imaginary parts of input matrix.
+* **Output:**
+
+  * `result`: Tensor `(batch, 2, 4, 4)` — predicted complex matrix product result.
+  * `Z_inv`: Tensor `(batch, 2, 4, 4)` — predicted inverse (complex) matrix.
+
+---
+
+### **`Reduced_param_CNN`**
+
+* **Input:**
+
+  * `x`: Tensor `(batch, 2, 4, 4)` representing real/imaginary input matrix.
+* **Output:**
+
+  * `result`: Tensor `(batch, 2, 4, 4)` — predicted output matrix.
+  * `Z_inv`: Tensor `(batch, 2, 4, 4)` — reconstructed symmetric complex matrix from 7 parameters.
+
+---
+
+Would you like me to also include **a one-line summary** for each (e.g., purpose) alongside the input/output?
 
 ### `couplingcnn.py`
 
