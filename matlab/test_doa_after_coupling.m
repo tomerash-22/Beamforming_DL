@@ -39,19 +39,7 @@ histogram(err_output(ff),100)
 hold on
 histogram(dataset_param_coupling.doa_err_post(ff),100)
 mean(doa_improv(ff))
-%%
-% zz = find(dataset_param_coupling.doa_err_post==0) ; 
-% figure
-% histogram(err_output(zz),100)
-% hold on
-% histogram(dataset_param_coupling.doa_err_post(zz),100)
-% mean(doa_improv(zz))
-% 
-% 
 
-
-
-%%
 
 
 
@@ -284,5 +272,6 @@ caxis([min(Z_filled(:)), max(Z_filled(:)) + 1]);
 %     title('Density Heatmap among the mtrisec with doa eror < 5 deg');
 %     xlabel('snr'); ylabel('P mvdr doa error');
 end
+
 
 
