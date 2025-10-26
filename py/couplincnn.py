@@ -21,6 +21,7 @@ from optuna.visualization import plot_param_importances
 from optuna.visualization import plot_contour
 import random
 import os
+
 def estimate_model_size_mb(model):
     total_params = 0
     for param in model.parameters():
@@ -30,7 +31,7 @@ def estimate_model_size_mb(model):
     size_mb = total_params * 4 / (1024 ** 2)  # 4 bytes per float32
     return size_mb
 
-
+#------objective for optuna runs
 
 def objective(trial):
     # --- Hyperparameters to optimize ---
@@ -91,9 +92,8 @@ def objective(trial):
 
     # --- Return best validation loss as objective ---
     return avg_val_metric
-
-def test_model_on_mat(model_path, mat_input_path, mat_output_path, input_key='R_coupled', output_key='predicted_R_sig'):
-    """
+    
+   """
     Load a trained PyTorch model and test it on data from a .mat file, saving predictions to a new .mat file.
 
     Args:
@@ -103,16 +103,8 @@ def test_model_on_mat(model_path, mat_input_path, mat_output_path, input_key='R_
         input_key (str): Key for the input matrix inside the .mat file (default is 'R_coupled').
         output_key (str): Key to use for the output matrix when saving to .mat file (default is 'predicted_R_sig').
     """
-    # # Enqueue a specific trial
-
-    ## # Enqueue a specific trial
-# study.enqueue_trial({
-#     "conv2_out": 38,
-#     "kernel_size": 3,
-#     "fc_num": 1,
-#     "resblock_num": 3
-# })
-
+def test_model_on_mat(model_path, mat_input_path, mat_output_path, input_key='R_coupled', output_key='predicted_R_sig'):
+ 
     state_dict = torch.load(model_path)
     for key, value in state_dict.items():
          print(f"{key} → shape: {value.shape}")
@@ -224,10 +216,6 @@ def custom_loss_function(output, target, reg_factor_H,reg_kappa = 0.1,
 
     return l2mse #+ reg_kappa*kappa_term #mse +reg_factor_H * reg_term
 
-
-# def l2_loss(output, target):
-#     loss = nn.MSELoss()
-#     return loss(output, target)
 
 def train_model(model, train_loader, val_loader, optimizer, threshold, max_epochs,
                 batch_sz,gamma,step_size,reg_diag,kappa_reg):#,trial):
@@ -374,45 +362,7 @@ def train_model(model, train_loader, val_loader, optimizer, threshold, max_epoch
 
     return avg_val_metric
 
-# Load dataset and create DataLoader
-
-#study = optuna.create_study(direction='minimize')
-#T_optim = 6*60*60
-# # Enqueue a specific trial
-# study.enqueue_trial({
-#     "conv2_out": 38,
-#     "kernel_size": 3,
-#     "fc_num": 1,
-#     "resblock_num": 3
-# })
-#
-#study.optimize(objective, n_trials=1000,timeout=T_optim)
-#
-#
-#with open('optuna_study_zero_kappa.pkl', 'wb') as f:
-#     pickle.dump(study, f)
-#
-# print("Study saved to optuna_study_04_06_coupling.pkl.pkl")
-#
-# with open('optuna_study_04_06_coupling.pkl', 'rb') as f:
-#     study = pickle.load(f)
-#
-# print("Best trial:")
-# best_trial = study.best_trial
-#
-# print(f"  Value (objective): {best_trial.value}")
-# print("  Params:")
-# for key, value in best_trial.params.items():
-#     print(f"    {key}: {value}")
-#
-#
-# fig = plot_contour(study, params=["conv2_out", "resblock_num"])
-# fig.show()
-
-# # # #
-# # # %%
-
-
+# ----------inference from pth_final folder in proj dircotry-----------------------------------------
 # Paths
 workspace_dir = "pth_final"        # 🔹 your models directory
 results_dir = os.path.join(workspace_dir, "results_logonly")
@@ -435,20 +385,10 @@ for fname in os.listdir(workspace_dir):
                           mat_input_path=mat_file_path,
                           mat_output_path=mat_output_path)
 
-
-
-# # # # # # # # # # test_model_on_mat(model_path='coupling_cnn_27_06_reg0_frob_1718.pth' , mat_input_path=mat_file_path,
-# # # # # # # # # #                    mat_output_path= '11_07Rsig')
-
 test_model_on_mat(model_path= 'l2_mse_nofrob.pth', mat_input_path=mat_file_path,
                            mat_output_path= 'R_sig_15_09_l2mse_nofrob_1000kappa_val')
-# #
-# #
-#
-# # # # used to be
-# #mat_file_path='data_set_remote_desk_ses.mat'
-# #
-#mat_file_path='coupling_16_07_10K.mat'
+
+#-----Training ------------------------------
 
 mat_file_path = 'final_coupling_training_dataset_06_09.mat'
 dataset = MATLABDataset(mat_file_path)
@@ -488,14 +428,37 @@ training_losses, validation_losses, grad_norm_lst = \
 train_model(model, train_loader, val_loader, optimizer,
              threshold, max_epochs, batch_sz,gamma,step_size=1,reg_diag=0,kappa_reg=10e-11)
 
-# # Plot losses
-# plt.plot(training_losses, label='Training Loss')
-# plt.plot(validation_losses, label='Validation Loss')
-# plt.xlabel('Epochs')
-# plt.ylabel('Loss')
-# plt.title('Training and Validation Loss over Epochs')
-# plt.legend()
-# plt.show()
+
+#--------------------optuna runs : -------------------------------------------
+#study = optuna.create_study(direction='minimize')
+#T_optim = 6*60*60
+# # Enqueue a specific trial
+# study.enqueue_trial({
+#     "conv2_out": 38,
+#     "kernel_size": 3,
+#     "fc_num": 1,
+#     "resblock_num": 3
+# })
 #
-# # If desired, save the model
-# torch.save(model.state_dict(), 'coupling_cnn.pth')
+#study.optimize(objective, n_trials=1000,timeout=T_optim)
+#
+#
+#with open('optuna_study_zero_kappa.pkl', 'wb') as f:
+#     pickle.dump(study, f)
+#
+# print("Study saved to optuna_study_04_06_coupling.pkl.pkl")
+#
+# with open('optuna_study_04_06_coupling.pkl', 'rb') as f:
+#     study = pickle.load(f)
+#
+# print("Best trial:")
+# best_trial = study.best_trial
+#
+# print(f"  Value (objective): {best_trial.value}")
+# print("  Params:")
+# for key, value in best_trial.params.items():
+#     print(f"    {key}: {value}")
+#
+#
+# fig = plot_contour(study, params=["conv2_out", "resblock_num"])
+# fig.show()
