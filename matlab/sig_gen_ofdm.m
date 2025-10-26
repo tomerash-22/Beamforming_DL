@@ -46,33 +46,8 @@ rset_sys(ch_param);
 rx_ofdm(sig_param , impairments_param,signal_data.rx_sig{1},signal_data.rx_clean_sig{1});
 
     
-
-% if ( ch_param.snr>11 || ch_param.snr==0 ) %
-%     rset_sys(ch_param); 
-%     rx_sig_lowsnr =rx_lownoise+rx_inter+rx_clean_sig;
-% else
-%     rx_sig_lowsnr = rx_sig;
-% end
-
 signal_data.rx_sig_lowsnr{1} = signal_data.rx_sig{1};
 signal_data.R_inter_noise{1} = cov(  signal_data.rx_sig{1} -signal_data.rx_clean_sig{1} );
 
 
-%% diffrent imple : 
-%      rx_clean_sig = ch_param.collector_nw(sig',sig_param.inputAngle);     
-%      rx_inter =ch_param.collector_nw(inter_sig_t2',inter_param.inputAngle);
-%      rx_noise = repmat(noise_snr,[4,1]);
-
-    %rx_sig = awgn(rx_clean_sig,ch_param.snr)+rx_inter;
-%% FFT
-% figure(2)
-% plot(linspace(-sig_param.fs/2,sig_param.fs/2,length(sig)), ...
-%     db(abs(fftshift(fft((rx_sig(:,1))))), 200));
-% hold on
-% plot(linspace(-sig_param.fs/2,sig_param.fs/2,length(sig)), ...
-%     db(abs(fftshift(fft((rx_clean_sig(:,1))))), 200));
-% plot(linspace(-sig_param.fs/2,sig_param.fs/2,length(sig)), ...
-%     db(abs(fftshift(fft((rx_inter(:,1))))), 200));
-% plot(linspace(-sig_param.fs/2,sig_param.fs/2,length(sig)), ...
-%     db(abs(fftshift(fft((rx_noise(:,1))))), 200));
 
