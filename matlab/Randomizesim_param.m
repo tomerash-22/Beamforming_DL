@@ -13,13 +13,9 @@ impairments_param.phase=(randi([-10 10],[1,4])); %in deg
 
 sig_param.ofdm_BW = randi([18e6,22e6]);
 
-
-%fix - one fco for all
 impairments_param.fco = randn*10e3;
 
-%does all front-end chins have the same fco? 
-%ch_param.transmitter.release
-%ch_param.transmitter.OperatingFrequency = sig_param.fc + impairments_param.fco; 
+
 
 try
     pos_dir = randi([sig_param.dir+20,80]);
@@ -68,3 +64,4 @@ Z_rand(j+2,j) = Z_2diff(1,ii);
 ii=ii+1;
 end
 impairments_param.Z_mat = Z_rand;
+
