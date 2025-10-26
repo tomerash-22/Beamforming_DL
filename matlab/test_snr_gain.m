@@ -2,65 +2,6 @@
 
 
 
-% 
-% 
-% % Load your struct
-% %load('IQ_dataset_param.mat');
-% 
-% target_len = 100000;
-% 
-% for i = 1:numel(IQ_dataset_param.clean_sig)
-%     % Trim clean signal
-%     if numel(IQ_dataset_param.clean_sig{i}) > target_len
-%         IQ_dataset_param.clean_sig{i} = IQ_dataset_param.clean_sig{i}(1:target_len);
-%     end
-%     
-%     % Trim distorted signal
-%     if numel(IQ_dataset_param.distor_sig{i}) > target_len
-%         IQ_dataset_param.distor_sig{i} = IQ_dataset_param.distor_sig{i}(1:target_len);
-%     end
-% end
-% 
-% % Save trimmed dataset
-% save('IQ_dataset_param_trimmed.mat', 'IQ_dataset_param');
-% 
-% 
-% 
-% %78106
-% Load your struct
-% load('dataset_param_coupling.mat');
-
-%Define the valid length
-% valid_len = 10000;
-% 
-% % List of fields to trim
-% fields = fieldnames(dataset_param_coupling);
-% 
-% for i = 1:numel(fields)
-%     f = fields{i};
-%     val = dataset_param_coupling.(f);
-%     
-%     % Only trim arrays with length 100000
-%     if isnumeric(val) || islogical(val)
-%         if size(val, 1) == 1000
-%             dataset_param_coupling.(f) = val(1:valid_len, :);
-%         elseif size(val, 2) == 1000
-%             dataset_param_coupling.(f) = val(:, 1:valid_len);
-%         elseif ndims(val) == 3 && size(val, 3) == 1000
-%             dataset_param_coupling.(f) = val(:,:,1:valid_len);
-%         end
-%     end
-% end
-% 
-% % Save trimmed struct
-% save('dataset_param_coupling_trimmed.mat', 'dataset_param_coupling');
-% 
-% 
-
-
-
-
-
 ULA_0AZ_24_09 = importdata("ula_2_6Ghz_7_11.mat");
 dataset = 'coupling' ; 
 
@@ -119,18 +60,11 @@ switch dataset
                 del_ang,false);
             snr_gain_final_tot_diff(i) = snr_gain_mpdr_post(i) - snr_gain_mpdr_pre(i);
             snr_gain_final_pred(i) = snr_gain_mpdr_pred(i) - snr_gain_mpdr_pre(i);
-% 
-%             if snr_gain_mpdr_pre(i)+ 2  <  snr_gain_mpdr_post(i) 
-%                 snr_gain_wrapw(w_mpdr_pre,sig_est_dir,ULA_0AZ_24_09,inter_att, ...
-%             del_ang,true);
-%                 snr_gain_wrapw(w_mpdr_post,sig_est_dir,ULA_0AZ_24_09,inter_att, ...
-%                 del_ang,true);
-%             end
-%         
+
         end
 end
 
-%%
+
 
 
 
@@ -308,4 +242,4 @@ end
 
 
 
-%% do with knowen interfirence angle
+
