@@ -1,8 +1,5 @@
 
-
-
 import pickle
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -12,14 +9,12 @@ import scipy.io
 import math
 import matplotlib.pyplot as plt
 import torch
-
 import torch
 import scipy.io as sio
 import numpy as np
 from torch.utils.data import DataLoader, TensorDataset
 import optuna
 from optuna.exceptions import TrialPruned
-
 import h5py
 import numpy as np
 
@@ -64,6 +59,7 @@ def symmetric_matrix_from_params(params):
         mat[:, 2, 3] = mat[:, 3, 2] = f
     return to_complex(mat)
 
+# Create database from .mat struct this is designed for matlab double. 
 
 class MATLABDataset(Dataset):
     def __init__(self, mat_file_path):
@@ -78,41 +74,7 @@ class MATLABDataset(Dataset):
         self.targets = torch.stack((R_sig_real, R_sig_imag), dim=2)  # Shape: (4, 4, 2, 500)
         self.inputs = self._normalize_frobenius(self.inputs)
         self.targets = self._normalize_frobenius(self.targets)
-        #
-        # with h5py.File(mat_file_path, 'r') as f:
-        #     # Assuming structure: f['/dataset_param_coupling/R_coupled/real']
-        #
-        #     R_coupled_dataset = f['/dataset_param_coupling/R_coupled']
-        #     R_coupled_np = np.array(R_coupled_dataset)  # Shape: (100, 4, 4), dtype: void with fields
-        #     R_sig_dataset = f['/dataset_param_coupling/R_sig']
-        #     R_sig_np = np.array(R_sig_dataset)  # Shape: (100, 4, 4), dtype: void with fields
-        #     # Extract real and imaginary parts
-        #     R_coupled_real = np.array(R_coupled_np['real'])  # Shape: (100, 4, 4)
-        #     R_coupled_imag = np.array(R_coupled_np['imag'])  # Shape: (100, 4, 4)
-        #     R_sig_real = np.array(R_sig_np['real'])  # Shape: (100, 4, 4)
-        #     R_sig_imag = np.array(R_sig_np['imag'])  # Shape: (100, 4, 4)
-        #
-        #     # Convert to tensors and permute to match your model shape (C, H, W, N) → (4, 4, 2, 100)
-        #     R_coupled_real = torch.tensor(R_coupled_real, dtype=torch.float32)
-        #     R_coupled_imag = torch.tensor(R_coupled_imag, dtype=torch.float32)
-        #     R_sig_real = torch.tensor(R_sig_real, dtype=torch.float32)
-        #     R_sig_imag= torch.tensor(R_sig_imag, dtype=torch.float32)
-
-
-
-        # Combine real and imaginary parts into a single tensor with shape (4, 4, 2, 500)
-
-        #
-        # self.inputs = self.inputs.permute(3, 1, 2, 0)  # From (100, 4, 2, 4) → (4, 4, 2, 100)
-        # self.targets = self.targets.permute(3, 1, 2, 0)  # From (100, 4, 2, 4) → (4, 4, 2, 100)
-
-        # Extract real and imaginary parts of R_coupled and R_sig
-
-        # Combine real and imaginary parts into a single tensor with shape (4, 4, 2, 500)
-        # self.inputs = torch.stack((R_coupled_real, R_coupled_imag), dim=2)  # Shape: (4, 4, 2, 500)
-        # self.targets = torch.stack((R_sig_real, R_sig_imag), dim=2)  # Shape: (4, 4, 2, 500)
-
-        # Apply Frobenius normalization to each matrix (sample-wise)
+    
 
     def __len__(self):
         return self.inputs.shape[3]  # Number of samples (500)
@@ -143,6 +105,7 @@ class MATLABDataset(Dataset):
         input_sample = input_sample.permute(2, 0, 1)  # Change to (2, 4, 4)
         target_sample = target_sample.permute(2, 0, 1)  # Change to (2, 4, 4)
         return input_sample, target_sample
+
 class ResidualBlockWithoutBN(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, padding=1):
         super(ResidualBlockWithoutBN, self).__init__()
@@ -198,9 +161,8 @@ class ResidualBlock(nn.Module):
         return x
 
 # New Residual Block without BatchNorm
-
-
 # CNN with residual blocks
+
 class MyRealCNN(nn.Module):
     def __init__(self , conv1_out_channels=4,conv2out_channel=8,kernel_sz=3,num_res_blocks=0,num_fc=0):
         super(MyRealCNN, self).__init__()
@@ -274,6 +236,7 @@ class MyRealCNN(nn.Module):
 
         return result,Z_inv
 
+# reduced param CNN uses the symetric matrix from param.
 class Reduced_param_CNN(nn.Module):
     def __init__(self , conv1_out_channels=4,conv2out_channel=8,kernel_sz=3,num_res_blocks=0,num_fc=0):
         super(Reduced_param_CNN, self).__init__()
@@ -345,4 +308,43 @@ class Reduced_param_CNN(nn.Module):
         Z_inv = torch.stack((Z_inv_real, Z_inv_imag), dim=1)  # Shape: (batch_size, 2, 100000)
         Z_inv = torch.squeeze(Z_inv, dim=2)
 
+
         return result,Z_inv
+
+
+# Depending on .mat size the loading prosses might need to be : 
+        # with h5py.File(mat_file_path, 'r') as f:
+        #     # Assuming structure: f['/dataset_param_coupling/R_coupled/real']
+        #
+        #     R_coupled_dataset = f['/dataset_param_coupling/R_coupled']
+        #     R_coupled_np = np.array(R_coupled_dataset)  # Shape: (100, 4, 4), dtype: void with fields
+        #     R_sig_dataset = f['/dataset_param_coupling/R_sig']
+        #     R_sig_np = np.array(R_sig_dataset)  # Shape: (100, 4, 4), dtype: void with fields
+        #     # Extract real and imaginary parts
+        #     R_coupled_real = np.array(R_coupled_np['real'])  # Shape: (100, 4, 4)
+        #     R_coupled_imag = np.array(R_coupled_np['imag'])  # Shape: (100, 4, 4)
+        #     R_sig_real = np.array(R_sig_np['real'])  # Shape: (100, 4, 4)
+        #     R_sig_imag = np.array(R_sig_np['imag'])  # Shape: (100, 4, 4)
+        #
+        #     # Convert to tensors and permute to match your model shape (C, H, W, N) → (4, 4, 2, 100)
+        #     R_coupled_real = torch.tensor(R_coupled_real, dtype=torch.float32)
+        #     R_coupled_imag = torch.tensor(R_coupled_imag, dtype=torch.float32)
+        #     R_sig_real = torch.tensor(R_sig_real, dtype=torch.float32)
+        #     R_sig_imag= torch.tensor(R_sig_imag, dtype=torch.float32)
+
+
+
+        # Combine real and imaginary parts into a single tensor with shape (4, 4, 2, 500)
+
+        #
+        # self.inputs = self.inputs.permute(3, 1, 2, 0)  # From (100, 4, 2, 4) → (4, 4, 2, 100)
+        # self.targets = self.targets.permute(3, 1, 2, 0)  # From (100, 4, 2, 4) → (4, 4, 2, 100)
+
+        # Extract real and imaginary parts of R_coupled and R_sig
+
+        # Combine real and imaginary parts into a single tensor with shape (4, 4, 2, 500)
+        # self.inputs = torch.stack((R_coupled_real, R_coupled_imag), dim=2)  # Shape: (4, 4, 2, 500)
+        # self.targets = torch.stack((R_sig_real, R_sig_imag), dim=2)  # Shape: (4, 4, 2, 500)
+
+        # Apply Frobenius normalization to each matrix (sample-wise)
+
