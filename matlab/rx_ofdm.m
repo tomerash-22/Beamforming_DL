@@ -18,23 +18,7 @@ Q_samp=zeros(size(pre_mod_sig));
 I_samp=zeros(size(pre_mod_sig));
 ts=1/sig_param.fs;
 t=(0:ts:ts*(N_bins-1));
-%IQ imblance I-sin
-% for sen=1:4
-%     %delted-2pi
-% I_samp(sen,:) =impairments_param.gain(1,sen)*...
-% cos(2*pi*(sig_param.fc+sig_param.ofdm_BW/2).*t ) ; 
-% Q_samp(sen,:) =  sin(2*pi*((sig_param.fc+sig_param.ofdm_BW/2).*t)+ impairments_param.phase(1,sen)) ;
-% 
-% end
-% I_samp_tar =repmat( cos(2*pi*((sig_param.fc+sig_param.ofdm_BW/2).*t)) ,4,1);
-% Q_samp_tar=repmat(sin(2*pi*((sig_param.fc+sig_param.ofdm_BW/2).*t)) ,4,1);
 
-% for sen=1:4
-%     %delted-2pi
-% I_samp(sen,:) =db2mag(0.5)*...%impairments_param.gain(1,sen)*...
-% cos(2*pi*(sig_param.fc).*t ) ; 
-% Q_samp(sen,:) =  sin(2*pi*((sig_param.fc).*t)+deg2rad(4)) ;    %impairments_param.phase(1,sen)) ;
-% end
 
 rx_ofdm_sig = zeros(size(pre_mod_sig));
 rx_clean=zeros(size(rx_ofdm_sig));
@@ -53,7 +37,7 @@ for sen=1:4
       clean_premod,sen,rect_lp,true);
 
 end
-% 
+ 
 %    figure(2)
 %  plot(linspace(-sig_param.fs/2,sig_param.fs/2,length(rx_ofdm_sig(1,:))), ...
 %      db(abs(fftshift(fft((rx_ofdm_sig(1,:))))), 200));
@@ -137,6 +121,4 @@ a=db2mag(1.5);
 
 end
 
-%% add impair to lp_andcomb - i.e. add impairments in BB not in fc down conversion
-%% change phase to match yuval
-%% change parametrs 
+
